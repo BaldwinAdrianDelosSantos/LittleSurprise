@@ -90,31 +90,61 @@
         const repoOwner = 'BaldwinAdrianDelosSantos';
         const repoName = 'LittleSurprise';
 
+        function tryParseLocalAnswers() {
+            try {
+                const raw = localStorage.getItem('little_surprise_answers');
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function renderAnswers(items) {
+            const list = document.getElementById('answers-list');
+            if (!items.length) {
+                list.innerHTML = '<div class="empty-state">No answers yet.</div>';
+                return;
+            }
+
+            list.innerHTML = items.map(item => {
+                const date = item.time ? new Date(item.time).toLocaleString() : '';
+                return `
+                    <div class="answer-item">
+                        <div class="answer-meta">${escapeHtml(date)}</div>
+                        <div class="answer-text">${escapeHtml(item.text || item.answer)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function loadAnswers() {
             const list = document.getElementById('answers-list');
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/issues?labels=answer&state=all&per_page=100`);
-                if (!res.ok) throw new Error('Failed to load');
-                const issues = await res.json();
-
-                if (!issues.length) {
-                    list.innerHTML = '<div class="empty-state">No answers yet.</div>';
-                    return;
+                let issues = [];
+                if (res.ok) {
+                    issues = await res.json();
                 }
 
-                list.innerHTML = issues.map(issue => {
-                    const date = new Date(issue.created_at).toLocaleString();
-                    return `
-                        <div class="answer-item">
-                            <div class="answer-meta">${date}</div>
-                            <div class="answer-text">${escapeHtml(issue.title.replace('New answer: ', ''))}</div>
-                        </div>
-                    `;
-                }).join('');
+                const local = tryParseLocalAnswers();
+                const combined = [
+                    ...issues.map(i => ({
+                        text: i.title.replace('New answer: ', ''),
+                        time: i.created_at
+                    })),
+                    ...local.map(i => ({
+                        text: i.text,
+                        time: i.time
+                    }))
+                ];
+
+                combined.sort((a, b) => new Date(b.time) - new Date(a.time));
+                renderAnswers(combined);
             } catch (e) {
-                list.innerHTML = '<div class="empty-state">Could not load answers. Check internet or repo access.</div>';
+                const local = tryParseLocalAnswers();
+                renderAnswers(local);
             }
         }
 

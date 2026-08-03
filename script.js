@@ -559,6 +559,7 @@ function handleYes() {
         createConfetti();
         createFireworks();
         createHeartRain();
+        showToast('Answer recorded. Thank you! 💖');
     }, 500);
 }
 
@@ -595,6 +596,7 @@ function handleFriends(e) {
         state.lastAnswer = 'friends';
         AnswerCollector.recordAnswer('friends');
         transitionToScreen('friends-page');
+        showToast('Answer recorded. Thank you for your honesty 😊');
     }
 }
 
@@ -604,6 +606,7 @@ function handleFriends(e) {
 const AnswerCollector = {
     repoOwner: 'BaldwinAdrianDelosSantos',
     repoName: 'LittleSurprise',
+    storageKey: 'little_surprise_answers',
 
     getAnswerText(answer) {
         return answer === 'yes'
@@ -611,7 +614,24 @@ const AnswerCollector = {
             : "🤍 I'd rather stay friends";
     },
 
+    saveLocally(answer) {
+        try {
+            const answers = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+            answers.push({
+                answer,
+                text: this.getAnswerText(answer),
+                url: window.location.href,
+                time: new Date().toISOString()
+            });
+            localStorage.setItem(this.storageKey, JSON.stringify(answers));
+        } catch (e) {
+            // ignore storage errors
+        }
+    },
+
     async recordAnswer(answer) {
+        this.saveLocally(answer);
+
         const title = `New answer: ${this.getAnswerText(answer)}`;
         const body = `Someone answered: ${this.getAnswerText(answer)}\nURL: ${window.location.href}\nTime: ${new Date().toISOString()}`;
 
@@ -625,13 +645,8 @@ const AnswerCollector = {
                 body: JSON.stringify({ title, body, labels: ['answer'] })
             });
         } catch (e) {
-            this.fallbackEmail(answer);
+            // silent fail - we still saved locally
         }
-    },
-
-    fallbackEmail(answer) {
-        const text = encodeURIComponent(`My answer is: ${this.getAnswerText(answer)} — see: ${window.location.href}`);
-        window.location.href = `mailto:theprofrog1223@gmail.com?subject=My Answer to Your Surprise&body=${text}`;
     }
 };
 
