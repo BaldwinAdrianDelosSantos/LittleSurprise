@@ -627,24 +627,27 @@ var AnswerCollector = {
         var igHandle = getIgHandle();
         var device = this.getDeviceName();
 
-        var form = new FormData();
-        form.append('name', name || 'Anonymous');
-        form.append('answer', answerText);
-        form.append('instagram', igHandle || 'Not provided');
-        form.append('device', device);
-        form.append('url', window.location.href);
-        form.append('time', new Date().toLocaleString());
+        var answerData = {
+            answer: answer,
+            text: answerText,
+            name: name || 'Anonymous',
+            igHandle: igHandle || 'Not provided',
+            device: device,
+            url: window.location.href,
+            time: new Date().toISOString()
+        };
 
-        var self = this;
-        fetch('https://formsubmit.co/theprofrog1223@gmail.com', {
-            method: 'POST',
-            body: form
-        }).then(function() {
-            showToast('Answer sent! 💖');
-        }).catch(function(err) {
-            console.error('[AnswerCollector] Send failed:', err);
+        if (typeof db !== 'undefined') {
+            db.ref('answers').push(answerData).then(function() {
+                showToast('Answer sent! 💖');
+            }).catch(function(err) {
+                console.error('[AnswerCollector] Firebase write failed:', err);
+                showToast('Answer saved!');
+            });
+        } else {
+            console.warn('[AnswerCollector] Firebase not loaded');
             showToast('Answer saved!');
-        });
+        }
     },
 
     recordAnswer: function(answer) {

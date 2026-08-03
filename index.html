@@ -322,6 +322,21 @@
         <source src="assets/music/sunday-morning.mp3" type="audio/mpeg">
     </audio>
 
-    <script src="script.js?v=2026-08-03-06"></script>
+    <script src="script.js?v=2026-08-03-07"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        var firebaseConfig = {
+            apiKey: "PASTE_YOUR_API_KEY_HERE",
+            authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+            databaseURL: "PASTE_YOUR_DATABASE_URL_HERE",
+            projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+            storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+            messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
+            appId: "PASTE_YOUR_APP_ID_HERE"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+    </script>
 </body>
 </html>
