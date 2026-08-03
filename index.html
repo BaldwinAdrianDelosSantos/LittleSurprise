@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a0b2e">
+    <meta name="description" content="A little surprise just for you">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>A Little Surprise 🌸</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Aurora Background -->
+    <div class="aurora-bg">
+        <div class="aurora-layer layer1"></div>
+        <div class="aurora-layer layer2"></div>
+        <div class="aurora-layer layer3"></div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div id="particles-container"></div>
+
+    <!-- Stars -->
+    <div id="stars-container"></div>
+
+    <!-- Floating Petals -->
+    <div id="petals-container"></div>
+
+    <!-- Fireflies -->
+    <div id="fireflies-container"></div>
+
+    <!-- Cursor Glow -->
+    <div id="cursor-glow"></div>
+
+    <!-- Share Button -->
+    <button class="share-btn" id="share-btn" title="Share this">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+    </button>
+
+    <!-- LOADING SCREEN -->
+    <section id="loading-screen" class="screen active">
+        <div class="loading-content">
+            <h1 class="loading-text">Loading something special...</h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loading-bar"></div>
+            </div>
+            <p class="loading-subtext" id="loading-subtext"></p>
+        </div>
+    </section>
+
+    <!-- HOME PAGE -->
+    <section id="home-page" class="screen">
+        <div class="home-content">
+            <div class="flower-container" id="home-flower">
+                <div class="flower">
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="petal"></div>
+                    <div class="flower-center"></div>
+                </div>
+            </div>
+
+            <div class="home-text">
+                <h1 class="title">Hi! 😊</h1>
+                <p class="subtitle">I made something just for you.</p>
+                <p class="description">It took me some time to make this, and I hope it makes you smile.</p>
+            </div>
+
+            <button class="btn-continue" id="btn-continue-home">
+                <span>Continue 🌸</span>
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </section>
+
+    <!-- FLOWER SCENE -->
+    <section id="flower-scene" class="screen">
+        <div class="flower-scene-content">
+            <div class="blooming-flower" id="blooming-flower">
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-center"></div>
+            </div>
+
+            <div class="scene-text" id="scene-text">
+                <p class="typewriter"></p>
+            </div>
+
+            <button class="music-toggle" id="music-toggle" title="Toggle Music">
+                <span class="music-icon">🎵</span>
+                <span class="music-label">Music OFF</span>
+            </button>
+
+            <button class="btn-continue hidden" id="btn-continue-scene">
+                <span>I'm listening 🌸</span>
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </section>
+
+    <!-- FUNNY SECTION -->
+    <section id="funny-section" class="screen">
+        <div class="funny-content">
+            <div class="card-container" id="funny-cards">
+                <div class="funny-card glass-card">
+                    <p class="funny-text">I almost didn't send you this...</p>
+                    <div class="loading-bar-mini">
+                        <div class="loading-bar-fill"></div>
+                    </div>
+                    <p class="funny-subtext">My courage was buffering...</p>
+                </div>
+
+                <div class="funny-card glass-card">
+                    <h3 class="card-title">Anxiety Level</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill anxiety"></div>
+                    </div>
+                    <span class="progress-label">██████████ 99%</span>
+
+                    <h3 class="card-title mt-3">Confidence</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill confidence"></div>
+                    </div>
+                    <span class="progress-label">█░░░░░░░░░ 1%</span>
+                </div>
+
+                <div class="funny-card glass-card">
+                    <h3 class="card-title">Fun Fact</h3>
+                    <p class="funny-text">I probably spent more time making this website than studying 😂</p>
+                </div>
+
+                <div class="funny-card glass-card warning-card">
+                    <h3 class="card-title">⚠️ Warning</h3>
+                    <p class="funny-text">This website contains dangerous levels of feelings.</p>
+                </div>
+
+                <div class="funny-card glass-card">
+                    <h3 class="card-title">404</h3>
+                    <p class="funny-text">Single not found.</p>
+                </div>
+
+                <div class="funny-card glass-card">
+                    <h3 class="card-title">🖥️ Windows Update</h3>
+                    <p class="funny-text">Installing courage...</p>
+                    <div class="loading-bar-mini">
+                        <div class="loading-bar-fill"></div>
+                    </div>
+                    <p class="funny-subtext">3% - Please don't turn off your feelings.</p>
+                </div>
+
+                <div class="funny-card glass-card">
+                    <h3 class="card-title">My brain:</h3>
+                    <p class="funny-text">Don't message her.</p>
+                    <h3 class="card-title mt-3">Also my brain:</h3>
+                    <p class="funny-text">Makes an entire website.</p>
+                </div>
+            </div>
+
+            <button class="btn-continue hidden" id="btn-continue-funny">
+                <span>Jokes aside... 🌸</span>
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </section>
+
+    <!-- MEME SECTION -->
+    <section id="meme-section" class="screen">
+        <div class="meme-content">
+            <h2 class="meme-title">Mood Board 🐱</h2>
+            <div class="meme-grid" id="meme-grid">
+                <div class="meme-card glass-card">
+                    <div class="meme-emoji">😹</div>
+                    <p class="meme-caption">Cat meme</p>
+                </div>
+                <div class="meme-card glass-card">
+                    <div class="meme-emoji">😭</div>
+                    <p class="meme-caption">Crying meme</p>
+                </div>
+                <div class="meme-card glass-card">
+                    <div class="meme-emoji">👨‍💻</div>
+                    <p class="meme-caption">Programmer meme</p>
+                </div>
+                <div class="meme-card glass-card">
+                    <div class="meme-emoji">⏳</div>
+                    <p class="meme-caption">Loading meme</p>
+                </div>
+                <div class="meme-card glass-card">
+                    <div class="meme-emoji">💖</div>
+                    <p class="meme-caption">Love meme</p>
+                </div>
+            </div>
+
+            <button class="btn-continue hidden" id="btn-continue-meme">
+                <span>There's something I'd like to ask you 🌸</span>
+                <div class="btn-glow"></div>
+            </button>
+        </div>
+    </section>
+
+    <!-- QUESTION PAGE -->
+    <section id="question-page" class="screen">
+        <div class="question-content">
+            <div class="blooming-flower large" id="question-flower">
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-petal"></div>
+                <div class="bloom-center"></div>
+            </div>
+
+            <div class="question-text">
+                <p class="thank-you">Before you answer...</p>
+                <p class="thank-you-sub">Thank you for taking the time to visit this little website.</p>
+
+                <h1 class="big-question">Do you like me?</h1>
+            </div>
+
+            <div class="question-buttons">
+                <button class="btn-yes" id="btn-yes">
+                    <span class="btn-text">❤️ Yes</span>
+                    <div class="btn-hearts"></div>
+                </button>
+                <button class="btn-friends" id="btn-friends">
+                    <span class="btn-text">🤍 I'd rather stay friends</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- YES PAGE -->
+    <section id="yes-page" class="screen">
+        <div class="yes-content">
+            <div class="confetti-container" id="confetti-container"></div>
+            <div class="fireworks-container" id="fireworks-container"></div>
+            <div class="heart-rain" id="heart-rain"></div>
+
+            <div class="yes-text">
+                <h1 class="big-yes">You honestly just made my day. 💖</h1>
+                <p class="yes-sub">Thank you for giving me a chance.</p>
+                <p class="yes-sub">I'd love to get to know you better.</p>
+
+                <div class="floating-hearts">
+                    <span class="floating-heart">❤️</span>
+                    <span class="floating-heart">🌸</span>
+                    <span class="floating-heart">💖</span>
+                    <span class="floating-heart">✨</span>
+                </div>
+
+                <h2 class="final-question">Can we make more happy memories together? 🌸</h2>
+            </div>
+        </div>
+    </section>
+
+    <!-- FRIENDS PAGE -->
+    <section id="friends-page" class="screen">
+        <div class="friends-content">
+            <div class="friends-flower">
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="petal"></div>
+                <div class="flower-center"></div>
+            </div>
+
+            <div class="friends-text">
+                <h1 class="friends-title">That's okay 😊</h1>
+                <p class="friends-sub">Thank you for being honest.</p>
+                <p class="friends-sub">I truly appreciate you taking the time to look at this.</p>
+                <p class="friends-sub">I hope it made you smile.</p>
+                <p class="friends-sub">Wishing you happiness always.</p>
+
+                <div class="floating-petals-final">
+                    <span>🌸</span>
+                    <span>🌸</span>
+                    <span>🌸</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
