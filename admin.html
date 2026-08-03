@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-02">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -53,6 +53,16 @@
             font-size: 1.1rem;
             font-weight: 700;
         }
+        .answer-name {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 0.25rem;
+        }
+        .answer-ig {
+            font-size: 0.85rem;
+            color: var(--color-lavender);
+            margin-top: 0.25rem;
+        }
         .empty-state {
             text-align: center;
             color: rgba(255, 255, 255, 0.7);
@@ -67,31 +77,6 @@
             font-weight: 700;
             cursor: pointer;
         }
-        .settings-row {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .settings-input {
-            flex: 1;
-            min-width: 220px;
-            padding: 0.8rem 1rem;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            background: rgba(255, 255, 255, 0.08);
-            color: white;
-            font-family: var(--font-body);
-            font-size: 0.95rem;
-            outline: none;
-        }
-        .settings-input::placeholder {
-            color: rgba(255, 255, 255, 0.45);
-        }
-        .status-text {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
     </style>
 </head>
 <body>
@@ -104,12 +89,7 @@
     <div class="admin-wrap">
         <div class="admin-card">
             <h1 class="admin-title">Answers</h1>
-            <div class="settings-row">
-                <input id="script-url" class="settings-input" placeholder="Paste Google Apps Script URL here" />
-                <button class="refresh-btn" id="save-settings">Save</button>
-                <button class="refresh-btn" id="refresh-btn">Refresh</button>
-            </div>
-            <p class="status-text" id="status-text"></p>
+            <button class="refresh-btn" id="refresh-btn">Refresh</button>
         </div>
         <div class="admin-card" id="answers-list">
             <div class="empty-state">Loading answers...</div>
@@ -117,12 +97,11 @@
     </div>
 
     <script>
-        const localStorageKey = 'little_surprise_answers';
-        const scriptUrlKey = 'little_surprise_script_url';
+        var localStorageKey = 'little_surprise_answers';
 
         function tryParseLocalAnswers() {
             try {
-                const raw = localStorage.getItem(localStorageKey);
+                var raw = localStorage.getItem(localStorageKey);
                 return raw ? JSON.parse(raw) : [];
             } catch (e) {
                 console.error('[admin] Failed to parse local answers', e);
@@ -131,93 +110,47 @@
         }
 
         function renderAnswers(items) {
-            const list = document.getElementById('answers-list');
+            var list = document.getElementById('answers-list');
             if (!items.length) {
-                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Ask her to open the site and answer. Then refresh here.</small></div>';
+                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Answers are sent to your email automatically.</small></div>';
                 return;
             }
 
-            list.innerHTML = items.map(item => {
-                const date = item.time ? new Date(item.time).toLocaleString() : '';
-                const source = item.source || 'Local';
-                const ig = item.igHandle ? `<br><small>Instagram: ${escapeHtml(item.igHandle)}</small>` : '';
-                return `
-                    <div class="answer-item">
-                        <div class="answer-meta">${escapeHtml(date)} · ${source}</div>
-                        <div class="answer-text">${escapeHtml(item.text || item.answer)}${ig}</div>
-                    </div>
-                `;
-            }).join('');
-        }
+            var html = '';
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                var date = item.time ? new Date(item.time).toLocaleString() : '';
+                var nameHtml = item.name ? '<div class="answer-name">Name: ' + escapeHtml(item.name) + '</div>' : '';
+                var igHtml = item.igHandle ? '<div class="answer-ig">Instagram: ' + escapeHtml(item.igHandle) + '</div>' : '';
 
-        async function loadAnswers() {
-            var list = document.getElementById('answers-list');
-            list.innerHTML = '<div class="empty-state">Loading answers...</div>';
-
-            var local = tryParseLocalAnswers();
-            var all = [];
-            var scriptUrl = localStorage.getItem(scriptUrlKey) || '';
-
-            for (var i = 0; i < local.length; i++) {
-                all.push(local[i]);
+                html += '<div class="answer-item">' +
+                    '<div class="answer-meta">' + escapeHtml(date) + '</div>' +
+                    '<div class="answer-text">' + escapeHtml(item.text || item.answer) + '</div>' +
+                    nameHtml +
+                    igHtml +
+                    '</div>';
             }
-
-            if (scriptUrl) {
-                try {
-                    var res = await fetch(scriptUrl, { method: 'GET' });
-                    if (res.ok) {
-                        var remote = await res.json();
-                        if (Array.isArray(remote)) {
-                            for (var j = 0; j < remote.length; j++) {
-                                all.push(remote[j]);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error('[admin] Remote load failed', e);
-                }
-            }
-
-            for (var k = 0; k < all.length; k++) {
-                all[k].source = all[k].source || 'Local';
-            }
-
-            all.sort(function(a, b) {
-                var timeA = new Date(a.time || a.created_at || 0);
-                var timeB = new Date(b.time || b.created_at || 0);
-                return timeB - timeA;
-            });
-
-            renderAnswers(all);
+            list.innerHTML = html;
         }
 
         function escapeHtml(text) {
-            const div = document.createElement('div');
+            var div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
+        function loadAnswers() {
+            var list = document.getElementById('answers-list');
+            list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
-        const urlInput = document.getElementById('script-url');
-        const saveBtn = document.getElementById('save-settings');
-        const statusText = document.getElementById('status-text');
-
-        if (urlInput) {
-            urlInput.value = localStorage.getItem(scriptUrlKey) || 'https://script.google.com/macros/s/AKfycbzZRjseDAXpjL3eZ36zzPHHKY4B_6uGUDDgKFMA_ZVs_HVBJUHi1L4QFAgcw-1_RLz3/exec';
+            var local = tryParseLocalAnswers();
+            local.sort(function(a, b) {
+                return new Date(b.time || 0) - new Date(a.time || 0);
+            });
+            renderAnswers(local);
         }
 
-        saveBtn.addEventListener('click', () => {
-            const url = urlInput.value.trim();
-            if (!url) {
-                statusText.textContent = 'Please paste a URL first.';
-                return;
-            }
-            localStorage.setItem(scriptUrlKey, url);
-            statusText.textContent = 'Saved. You can now view remote answers.';
-            loadAnswers();
-        });
-
+        document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
         loadAnswers();
     </script>
 </body>

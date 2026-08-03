@@ -1,7 +1,7 @@
 /* =========================================
    GLOBAL STATE
    ========================================= */
-const state = {
+var state = {
     currentScreen: 'loading',
     musicPlaying: false,
     friendsDodgeCount: 0,
@@ -75,6 +75,13 @@ function initShareButtonVisibility() {
 
 function getAnswerLabel(answer) {
     return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
+}
+
+function getResponderName() {
+    var input = document.getElementById('responder-name');
+    if (!input) return '';
+    var value = input.value.trim();
+    return value || 'Anonymous';
 }
 
 function getIgHandle() {
@@ -534,10 +541,6 @@ function handleYes() {
         createHeartRain();
         showToast('Thank you! 💖');
     }, 500);
-
-    setTimeout(function() {
-        AnswerCollector.sendByEmail('yes');
-    }, 2200);
 }
 
 /* =========================================
@@ -574,33 +577,29 @@ function handleFriends(e) {
         AnswerCollector.recordAnswer('friends');
         transitionToScreen('friends-page');
         showToast('Thank you for your honesty 😊');
-        setTimeout(function() {
-            AnswerCollector.sendByEmail('friends');
-        }, 2200);
     }
 }
 
 /* =========================================
    ANSWER COLLECTOR
    ========================================= */
-const AnswerCollector = {
-    repoOwner: 'BaldwinAdrianDelosSantos',
-    repoName: 'LittleSurprise',
+var AnswerCollector = {
     storageKey: 'little_surprise_answers',
-    googleScriptUrl: 'https://script.google.com/macros/s/AKfycbzZRjseDAXpjL3eZ36zzPHHKY4B_6uGUDDgKFMA_ZVs_HVBJUHi1L4QFAgcw-1_RLz3/exec',
 
-    getAnswerText(answer) {
-        return answer === 'yes'
-            ? '❤️ Yes'
-            : "🤍 I'd rather stay friends";
+    getAnswerText: function(answer) {
+        return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
     },
 
-    saveLocally(answer) {
+    saveLocally: function(answer) {
         try {
-            const answers = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+            var name = getResponderName();
+            var igHandle = getIgHandle();
+            var answers = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
             answers.push({
-                answer,
+                answer: answer,
                 text: this.getAnswerText(answer),
+                name: name,
+                igHandle: igHandle,
                 url: window.location.href,
                 time: new Date().toISOString()
             });
@@ -610,79 +609,38 @@ const AnswerCollector = {
         }
     },
 
-    async sendToSheet(answer) {
-        if (!this.googleScriptUrl) return false;
+    sendByEmail: function(answer) {
+        var answerText = this.getAnswerText(answer);
+        var name = getResponderName();
+        var igHandle = getIgHandle();
+        var igLine = igHandle ? 'Instagram: ' + igHandle : '';
+        var bodyText = 'New answer from the surprise website:\n\nName: ' + name + '\nAnswer: ' + answerText + '\n' + igLine + '\n\nLink: ' + window.location.href + '\nTime: ' + new Date().toLocaleString();
+        var subject = encodeURIComponent('Surprise Website Answer');
+        var body = encodeURIComponent(bodyText);
 
-        const payload = this.getPayload(answer);
-
-        try {
-            const formData = new FormData();
-            formData.append('answer', payload.answer);
-            formData.append('text', payload.text);
-            formData.append('url', payload.url);
-            formData.append('time', payload.time);
-            formData.append('igHandle', payload.igHandle);
-
-            await fetch(this.googleScriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: formData
-            });
-
-            return true;
-        } catch (e) {
-            console.error('[AnswerCollector] Sheet send failed', e);
-            return false;
-        }
-    },
-
-    sendByEmail(answer) {
-        const answerText = this.getAnswerText(answer);
-        const igHandle = getIgHandle();
-        const igLine = igHandle ? `Instagram: ${igHandle}` : '';
-        const bodyText = `Hi! I just answered your little surprise website.\n\nMy answer is: ${answerText}\n${igLine}\n\nSee the site: ${window.location.href}`;
-        const subject = encodeURIComponent('My Answer to Your Surprise');
-        const body = encodeURIComponent(bodyText);
-
-        const mailto = `mailto:theprofrog1223@gmail.com?subject=${subject}&body=${body}`;
+        var mailto = 'mailto:theprofrog1223@gmail.com?subject=' + subject + '&body=' + body;
 
         if (navigator.share) {
             navigator.share({
-                title: 'My Answer to Your Surprise',
+                title: 'Surprise Website Answer',
                 text: bodyText,
                 url: window.location.href
-            }).catch(() => {
+            }).catch(function() {
                 window.open(mailto, '_blank');
             });
         } else {
             window.open(mailto, '_blank');
         }
 
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(bodyText).then(() => {
-                showToast('Answer copied! Please send it to him');
-            }).catch(() => {
-                showToast('Please send the email that opened');
-            });
-        } else {
-            showToast('Please send the email that opened');
-        }
+        showToast('Answer sent! Check your email.');
     },
 
-    async recordAnswer(answer) {
+    recordAnswer: function(answer) {
         this.saveLocally(answer);
-        this.sendToSheet(answer);
-    },
-
-    getPayload(answer) {
-        const igHandle = getIgHandle();
-        return {
-            answer,
-            text: this.getAnswerText(answer),
-            url: window.location.href,
-            time: new Date().toISOString(),
-            igHandle
-        };
+        var self = this;
+        setTimeout(function() {
+            self.sendByEmail(answer);
+        }, 2000);
     }
 };
 
