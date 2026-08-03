@@ -628,7 +628,7 @@ var AnswerCollector = {
         var device = this.getDeviceName();
 
         var formData = new FormData();
-        formData.append('access_key', 'YOUR_WEB3FORMS_ACCESS_KEY');
+        formData.append('access_key', '6a3dfb43-609b-452b-8370-0d4baefbbb3e');
         formData.append('name', name || 'Anonymous');
         formData.append('answer', answerText);
         formData.append('instagram', igHandle || 'Not provided');
