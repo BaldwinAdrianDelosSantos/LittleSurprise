@@ -36,10 +36,22 @@ document.addEventListener('DOMContentLoaded', function() {
 function initMusicStopOnClose() {
     var music = document.getElementById('bg-music');
 
-    window.addEventListener('beforeunload', function() {
+    function stopMusic() {
         if (music && state.musicPlaying) {
             music.pause();
             music.currentTime = 0;
+            state.musicPlaying = false;
+            var toggleBtn = document.getElementById('music-toggle');
+            var label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
+            if (label) label.textContent = 'Music OFF';
+        }
+    }
+
+    window.addEventListener('beforeunload', stopMusic);
+    window.addEventListener('pagehide', stopMusic);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            stopMusic();
         }
     });
 }
