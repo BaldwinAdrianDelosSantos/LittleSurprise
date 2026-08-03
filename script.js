@@ -51,6 +51,10 @@ function initShareButtonVisibility() {
     show();
 }
 
+function getAnswerLabel(answer) {
+    return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
+}
+
 /* =========================================
    STARS
    ========================================= */
@@ -548,6 +552,7 @@ function toggleMusic() {
    ========================================= */
 function handleYes() {
     state.lastAnswer = 'yes';
+    AnswerCollector.recordAnswer('yes');
     transitionToScreen('yes-page');
 
     setTimeout(() => {
@@ -555,10 +560,6 @@ function handleYes() {
         createFireworks();
         createHeartRain();
     }, 500);
-
-    setTimeout(() => {
-        promptShareAnswer('❤️ Yes');
-    }, 1800);
 }
 
 /* =========================================
@@ -592,41 +593,47 @@ function handleFriends(e) {
         }, 1000);
     } else {
         state.lastAnswer = 'friends';
+        AnswerCollector.recordAnswer('friends');
         transitionToScreen('friends-page');
-
-        setTimeout(() => {
-            promptShareAnswer('🤍 I\'d rather stay friends');
-        }, 1800);
     }
 }
 
 /* =========================================
-   ANSWER SHARING
+   ANSWER COLLECTOR
    ========================================= */
-function promptShareAnswer(answerText) {
-    const shareData = {
-        title: 'A Little Surprise',
-        text: `My answer is: ${answerText} — see for yourself: ${window.location.href}`,
-        url: window.location.href
-    };
+const AnswerCollector = {
+    repoOwner: 'BaldwinAdrianDelosSantos',
+    repoName: 'LittleSurprise',
 
-    const doFallback = () => {
-        const text = `My answer is: ${answerText} — see for yourself: ${window.location.href}`;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Answer copied! Send it back to him');
-            }).catch(() => showToast('Copy this answer and send it to him'));
-        } else {
-            showToast('Copy this answer and send it to him');
+    getAnswerText(answer) {
+        return answer === 'yes'
+            ? '❤️ Yes'
+            : "🤍 I'd rather stay friends";
+    },
+
+    async recordAnswer(answer) {
+        const title = `New answer: ${this.getAnswerText(answer)}`;
+        const body = `Someone answered: ${this.getAnswerText(answer)}\nURL: ${window.location.href}\nTime: ${new Date().toISOString()}`;
+
+        try {
+            await fetch(`https://api.github.com/repos/${this.repoOwner}/${this.repoName}/issues`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, body, labels: ['answer'] })
+            });
+        } catch (e) {
+            this.fallbackEmail(answer);
         }
-    };
+    },
 
-    if (navigator.share) {
-        navigator.share(shareData).catch(doFallback);
-    } else {
-        doFallback();
+    fallbackEmail(answer) {
+        const text = encodeURIComponent(`My answer is: ${this.getAnswerText(answer)} — see: ${window.location.href}`);
+        window.location.href = `mailto:theprofrog1223@gmail.com?subject=My Answer to Your Surprise&body=${text}`;
     }
-}
+};
 
 /* =========================================
    CONFETTI

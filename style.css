@@ -1247,8 +1247,13 @@ body {
     50% { box-shadow: 0 0 20px rgba(192, 132, 252, 0.8), 0 0 40px rgba(255, 107, 157, 0.4); }
 }
 
-/* =========================================
-   RESPONSIVE - MOBILE FIRST
+.answer-note {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.5rem;
+    max-width: 320px;
+    line-height: 1.5;
+}
    ========================================= */
 @media (max-width: 767px) {
     .screen {
