@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2026-08-03-03">
+    <link rel="stylesheet" href="../LittleSurprise/style.css?v=2026-08-03-03">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -60,7 +60,7 @@
         }
         .answer-ig {
             font-size: 0.85rem;
-            color: var(--color-lavender);
+            color: var(--color-lavender, #c084fc);
             margin-top: 0.25rem;
         }
         .answer-device {
@@ -82,18 +82,15 @@
             font-weight: 700;
             cursor: pointer;
         }
-        .live-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            margin-left: 0.5rem;
-            animation: pulse-dot 2s ease-in-out infinite;
+        .sheet-link {
+            color: #c084fc;
+            text-decoration: underline;
+            cursor: pointer;
         }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .error-state {
+            color: #fb7185;
+            text-align: center;
+            padding: 1rem;
         }
     </style>
 </head>
@@ -106,8 +103,11 @@
 
     <div class="admin-wrap">
         <div class="admin-card">
-            <h1 class="admin-title">Answers <span class="live-indicator" title="Live updates"></span></h1>
-            <button class="refresh-btn" id="refresh-btn">Refresh Now</button>
+            <h1 class="admin-title">Answers</h1>
+            <button class="refresh-btn" id="refresh-btn">Refresh</button>
+            <p style="padding: 1rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">
+                Live from Google Sheet. Auto-refreshes every 3 seconds.
+            </p>
         </div>
         <div class="admin-card" id="answers-list">
             <div class="empty-state">Loading answers...</div>
@@ -115,21 +115,17 @@
     </div>
 
     <script>
-        var localStorageKey = 'little_surprise_answers';
+        var apiUrl = 'https://script.google.com/macros/s/AKfycbxCQRF6JknJfXkZu4qk9XH-YUCcxhRrj4W6YoQpRhuAN57pwoT6-ONXEFiM9FmdhPYo/exec';
 
-        function tryParseLocalAnswers() {
-            try {
-                var raw = localStorage.getItem(localStorageKey);
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) {
-                console.error('[admin] Failed to parse local answers', e);
-                return [];
-            }
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function renderAnswers(items) {
             var list = document.getElementById('answers-list');
-            if (!items.length) {
+            if (!items || !items.length) {
                 list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Answers will appear here automatically.</small></div>';
                 return;
             }
@@ -137,14 +133,21 @@
             var html = '';
             for (var i = 0; i < items.length; i++) {
                 var item = items[i];
-                var date = item.time ? new Date(item.time).toLocaleString() : '';
+                var date = '';
+                if (item.time) {
+                    try {
+                        date = new Date(item.time).toLocaleString();
+                    } catch (e) {
+                        date = item.time;
+                    }
+                }
                 var nameHtml = item.name ? '<div class="answer-name">Name: ' + escapeHtml(item.name) + '</div>' : '';
                 var igHtml = item.igHandle ? '<div class="answer-ig">Instagram: ' + escapeHtml(item.igHandle) + '</div>' : '';
                 var deviceHtml = item.device ? '<div class="answer-device">📱 ' + escapeHtml(item.device) + '</div>' : '';
 
                 html += '<div class="answer-item">' +
                     '<div class="answer-meta">' + escapeHtml(date) + '</div>' +
-                    '<div class="answer-text">' + escapeHtml(item.text || item.answer) + '</div>' +
+                    '<div class="answer-text">' + escapeHtml(item.text || item.answer || '') + '</div>' +
                     nameHtml +
                     igHtml +
                     deviceHtml +
@@ -153,27 +156,33 @@
             list.innerHTML = html;
         }
 
-        function escapeHtml(text) {
-            var div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         function loadAnswers() {
             var list = document.getElementById('answers-list');
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
-            var local = tryParseLocalAnswers();
-            local.sort(function(a, b) {
-                return new Date(b.time || 0) - new Date(a.time || 0);
+            fetch(apiUrl, {
+                method: 'GET',
+                mode: 'cors'
+            }).then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            }).then(function(data) {
+                if (data.result === 'ok' && data.answers) {
+                    data.answers.reverse();
+                    renderAnswers(data.answers);
+                } else if (data.result === 'error') {
+                    list.innerHTML = '<div class="error-state">Error: ' + escapeHtml(data.error || 'Unknown error') + '</div>';
+                } else {
+                    renderAnswers([]);
+                }
+            }).catch(function(err) {
+                console.error('[admin] Fetch failed:', err);
+                list.innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small><br><small>Make sure Apps Script is deployed as "Anyone, even anonymous".</small></div>';
             });
-            renderAnswers(local);
         }
 
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
         loadAnswers();
-
-        // Auto-refresh every 3 seconds for live updates
         setInterval(loadAnswers, 3000);
     </script>
 </body>

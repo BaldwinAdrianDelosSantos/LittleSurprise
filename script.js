@@ -585,7 +585,7 @@ function handleFriends(e) {
    ========================================= */
 var AnswerCollector = {
     storageKey: 'little_surprise_answers',
-    formUrl: 'https://formsubmit.co/theprofrog1223@gmail.com',
+    formUrl: 'https://script.google.com/macros/s/AKfycbxCQRF6JknJfXkZu4qk9XH-YUCcxhRrj4W6YoQpRhuAN57pwoT6-ONXEFiM9FmdhPYo/exec',
 
     getAnswerText: function(answer) {
         return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
@@ -627,24 +627,37 @@ var AnswerCollector = {
         var name = getResponderName();
         var igHandle = getIgHandle();
         var device = this.getDeviceName();
-        var igLine = igHandle ? 'Instagram: ' + igHandle : '';
-        var deviceLine = 'Device: ' + device;
 
-        var formData = new FormData();
-        formData.append('name', name || 'Anonymous');
-        formData.append('answer', answerText);
-        formData.append('instagram', igHandle || 'Not provided');
-        formData.append('device', device);
-        formData.append('link', window.location.href);
-        formData.append('time', new Date().toLocaleString());
+        var payload = {
+            answer: answer,
+            text: answerText,
+            name: name || 'Anonymous',
+            instagram: igHandle || 'Not provided',
+            device: device,
+            link: window.location.href,
+            time: new Date().toLocaleString()
+        };
 
         var self = this;
         fetch(this.formUrl, {
             method: 'POST',
-            body: formData
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            mode: 'cors'
+        }).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text().then(function(t) {
+                try {
+                    var data = JSON.parse(t);
+                    if (data.result !== 'ok') throw new Error(data.error || 'Unknown error');
+                } catch (parseErr) {
+                    console.warn('[AnswerCollector] Non-JSON success response:', t);
+                }
+            });
         }).then(function() {
-            showToast('Answer sent to him automatically! 💖');
-        }).catch(function() {
+            showToast('Answer sent! 💖');
+        }).catch(function(err) {
+            console.error('[AnswerCollector] Send failed:', err);
             showToast('Answer saved!');
         });
     },
