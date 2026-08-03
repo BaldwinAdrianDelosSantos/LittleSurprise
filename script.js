@@ -537,7 +537,10 @@ function toggleMusic() {
     const toggleBtn = document.getElementById('music-toggle');
     const label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
 
-    if (!music || !music.src) {
+    const source = music ? music.querySelector('source') : null;
+    const hasSource = source && (source.src || source.getAttribute('src'));
+
+    if (!music || !hasSource) {
         showToast('Music file not found. Add it to assets/music/');
         return;
     }
