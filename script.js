@@ -28,7 +28,29 @@ document.addEventListener('DOMContentLoaded', function() {
     initShareButtonVisibility();
     initMusicStopOnClose();
     initEventListeners();
+    unlockAudioOnInteraction();
 });
+
+function unlockAudioOnInteraction() {
+    var music = document.getElementById('bg-music');
+    if (!music) return;
+
+    function tryPlay() {
+        music.play().then(function() {
+            state.musicPlaying = true;
+            var toggleBtn = document.getElementById('music-toggle');
+            var label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
+            if (label) label.textContent = 'Music ON';
+        }).catch(function() {
+            // still blocked, ignore
+        });
+        document.removeEventListener('click', tryPlay);
+        document.removeEventListener('touchstart', tryPlay);
+    }
+
+    document.addEventListener('click', tryPlay, { once: true });
+    document.addEventListener('touchstart', tryPlay, { once: true });
+}
 
 /* =========================================
    STOP MUSIC WHEN TAB/APP CLOSES
@@ -506,29 +528,16 @@ function toggleMusic() {
     var toggleBtn = document.getElementById('music-toggle');
     var label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
 
-    var source = music ? music.querySelector('source') : null;
-    var hasSource = source && (source.src || source.getAttribute('src'));
-
-    if (!music || !hasSource) {
-        showToast('Music file not found. Add it to assets/music/');
-        return;
-    }
+    if (!music) return;
 
     if (state.musicPlaying) {
-        fadeOutMusic(music, function() {
-            music.pause();
-            state.musicPlaying = false;
-            if (label) label.textContent = 'Music OFF';
-        });
-    } else {
         music.volume = 0;
-        music.play().then(function() {
-            fadeInMusic(music);
-            state.musicPlaying = true;
-            if (label) label.textContent = 'Music ON';
-        }).catch(function() {
-            showToast('Tap anywhere to enable music');
-        });
+        state.musicPlaying = false;
+        if (label) label.textContent = 'Music OFF';
+    } else {
+        music.volume = 0.25;
+        state.musicPlaying = true;
+        if (label) label.textContent = 'Music ON';
     }
 }
 
