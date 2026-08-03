@@ -81,7 +81,7 @@ function getResponderName() {
     var input = document.getElementById('responder-name');
     if (!input) return '';
     var value = input.value.trim();
-    return value || 'Anonymous';
+    return value;
 }
 
 function getIgHandle() {
@@ -531,6 +531,11 @@ function fadeOutMusic(music, callback, step) {
    YES BUTTON HANDLER
    ========================================= */
 function handleYes() {
+    var name = getResponderName();
+    if (!name) {
+        showToast('Please enter your name first 💖');
+        return;
+    }
     state.lastAnswer = 'yes';
     AnswerCollector.recordAnswer('yes');
     transitionToScreen('yes-page');
@@ -573,6 +578,11 @@ function handleFriends(e) {
             btn.style.zIndex = '';
         }, 1000);
     } else {
+        var name = getResponderName();
+        if (!name) {
+            showToast('Please enter your name first 💖');
+            return;
+        }
         state.lastAnswer = 'friends';
         AnswerCollector.recordAnswer('friends');
         transitionToScreen('friends-page');
