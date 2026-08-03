@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2026-08-03-02">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-03">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -63,6 +63,11 @@
             color: var(--color-lavender);
             margin-top: 0.25rem;
         }
+        .answer-device {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.25rem;
+        }
         .empty-state {
             text-align: center;
             color: rgba(255, 255, 255, 0.7);
@@ -77,6 +82,19 @@
             font-weight: 700;
             cursor: pointer;
         }
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
     </style>
 </head>
 <body>
@@ -88,8 +106,8 @@
 
     <div class="admin-wrap">
         <div class="admin-card">
-            <h1 class="admin-title">Answers</h1>
-            <button class="refresh-btn" id="refresh-btn">Refresh</button>
+            <h1 class="admin-title">Answers <span class="live-indicator" title="Live updates"></span></h1>
+            <button class="refresh-btn" id="refresh-btn">Refresh Now</button>
         </div>
         <div class="admin-card" id="answers-list">
             <div class="empty-state">Loading answers...</div>
@@ -112,7 +130,7 @@
         function renderAnswers(items) {
             var list = document.getElementById('answers-list');
             if (!items.length) {
-                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Answers are sent to your email automatically.</small></div>';
+                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Answers will appear here automatically.</small></div>';
                 return;
             }
 
@@ -122,12 +140,14 @@
                 var date = item.time ? new Date(item.time).toLocaleString() : '';
                 var nameHtml = item.name ? '<div class="answer-name">Name: ' + escapeHtml(item.name) + '</div>' : '';
                 var igHtml = item.igHandle ? '<div class="answer-ig">Instagram: ' + escapeHtml(item.igHandle) + '</div>' : '';
+                var deviceHtml = item.device ? '<div class="answer-device">📱 ' + escapeHtml(item.device) + '</div>' : '';
 
                 html += '<div class="answer-item">' +
                     '<div class="answer-meta">' + escapeHtml(date) + '</div>' +
                     '<div class="answer-text">' + escapeHtml(item.text || item.answer) + '</div>' +
                     nameHtml +
                     igHtml +
+                    deviceHtml +
                     '</div>';
             }
             list.innerHTML = html;
@@ -152,6 +172,9 @@
 
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
         loadAnswers();
+
+        // Auto-refresh every 3 seconds for live updates
+        setInterval(loadAnswers, 3000);
     </script>
 </body>
 </html>

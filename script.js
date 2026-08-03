@@ -585,21 +585,34 @@ function handleFriends(e) {
    ========================================= */
 var AnswerCollector = {
     storageKey: 'little_surprise_answers',
+    formUrl: 'https://formsubmit.co/theprofrog1223@gmail.com',
 
     getAnswerText: function(answer) {
         return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
+    },
+
+    getDeviceName: function() {
+        var ua = navigator.userAgent;
+        if (/Android/i.test(ua)) return 'Android Phone';
+        if (/iPhone|iPad|iPod/i.test(ua)) return 'iOS Device';
+        if (/Windows/i.test(ua)) return 'Windows PC';
+        if (/Mac/i.test(ua)) return 'Mac';
+        if (/Linux/i.test(ua)) return 'Linux';
+        return 'Unknown Device';
     },
 
     saveLocally: function(answer) {
         try {
             var name = getResponderName();
             var igHandle = getIgHandle();
+            var device = this.getDeviceName();
             var answers = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
             answers.push({
                 answer: answer,
                 text: this.getAnswerText(answer),
                 name: name,
                 igHandle: igHandle,
+                device: device,
                 url: window.location.href,
                 time: new Date().toISOString()
             });
@@ -613,34 +626,32 @@ var AnswerCollector = {
         var answerText = this.getAnswerText(answer);
         var name = getResponderName();
         var igHandle = getIgHandle();
+        var device = this.getDeviceName();
         var igLine = igHandle ? 'Instagram: ' + igHandle : '';
-        var bodyText = 'New answer from the surprise website:\n\nName: ' + name + '\nAnswer: ' + answerText + '\n' + igLine + '\n\nLink: ' + window.location.href + '\nTime: ' + new Date().toLocaleString();
-        var subject = encodeURIComponent('Surprise Website Answer');
-        var body = encodeURIComponent(bodyText);
+        var deviceLine = 'Device: ' + device;
 
-        var mailto = 'mailto:theprofrog1223@gmail.com?subject=' + subject + '&body=' + body;
+        var formData = new FormData();
+        formData.append('name', name || 'Anonymous');
+        formData.append('answer', answerText);
+        formData.append('instagram', igHandle || 'Not provided');
+        formData.append('device', device);
+        formData.append('link', window.location.href);
+        formData.append('time', new Date().toLocaleString());
 
-        if (navigator.share) {
-            navigator.share({
-                title: 'Surprise Website Answer',
-                text: bodyText,
-                url: window.location.href
-            }).catch(function() {
-                window.open(mailto, '_blank');
-            });
-        } else {
-            window.open(mailto, '_blank');
-        }
-
-        showToast('Answer sent! Check your email.');
+        var self = this;
+        fetch(this.formUrl, {
+            method: 'POST',
+            body: formData
+        }).then(function() {
+            showToast('Answer sent to him automatically! 💖');
+        }).catch(function() {
+            showToast('Answer saved!');
+        });
     },
 
     recordAnswer: function(answer) {
         this.saveLocally(answer);
-        var self = this;
-        setTimeout(function() {
-            self.sendByEmail(answer);
-        }, 2000);
+        this.sendByEmail(answer);
     }
 };
 
