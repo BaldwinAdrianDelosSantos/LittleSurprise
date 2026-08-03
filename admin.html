@@ -87,8 +87,6 @@
     </div>
 
     <script>
-        const repoOwner = 'BaldwinAdrianDelosSantos';
-        const repoName = 'LittleSurprise';
         const localStorageKey = 'little_surprise_answers';
 
         function tryParseLocalAnswers() {
@@ -104,13 +102,13 @@
         function renderAnswers(items) {
             const list = document.getElementById('answers-list');
             if (!items.length) {
-                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Try answering on the main page, then come back here.</small></div>';
+                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Ask her to open the site and answer. Then refresh here.</small></div>';
                 return;
             }
 
             list.innerHTML = items.map(item => {
                 const date = item.time ? new Date(item.time).toLocaleString() : '';
-                const source = item.url ? 'Live site' : 'Local';
+                const source = item.source || 'Local';
                 return `
                     <div class="answer-item">
                         <div class="answer-meta">${escapeHtml(date)} · ${source}</div>
@@ -125,35 +123,24 @@
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
             const local = tryParseLocalAnswers();
-            console.log('[admin] Local answers loaded:', local.length);
+            const all = [...local.map(i => ({...i, source: 'Local'}))];
 
             try {
-                const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/issues?labels=answer&state=all&per_page=100`);
-                let issues = [];
+                const res = await fetch('https://api.github.com/repos/BaldwinAdrianDelosSantos/LittleSurprise/issues?labels=answer&state=all&per_page=100');
                 if (res.ok) {
-                    issues = await res.json();
-                    console.log('[admin] GitHub issues loaded:', issues.length);
-                } else {
-                    console.warn('[admin] GitHub API returned', res.status);
-                }
-
-                const combined = [
-                    ...issues.map(i => ({
+                    const issues = await res.json();
+                    all.push(...issues.map(i => ({
                         text: i.title.replace('New answer: ', ''),
-                        time: i.created_at
-                    })),
-                    ...local.map(i => ({
-                        text: i.text,
-                        time: i.time
-                    }))
-                ];
-
-                combined.sort((a, b) => new Date(b.time) - new Date(a.time));
-                renderAnswers(combined);
+                        time: i.created_at,
+                        source: 'GitHub Issue'
+                    })));
+                }
             } catch (e) {
-                console.error('[admin] Load error', e);
-                renderAnswers(local);
+                console.error('[admin] GitHub load failed', e);
             }
+
+            all.sort((a, b) => new Date(b.time || b.created_at) - new Date(a.time || a.created_at));
+            renderAnswers(all);
         }
 
         function escapeHtml(text) {

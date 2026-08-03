@@ -607,8 +607,7 @@ const AnswerCollector = {
     repoOwner: 'BaldwinAdrianDelosSantos',
     repoName: 'LittleSurprise',
     storageKey: 'little_surprise_answers',
-    backendUrl: 'https://api.jsonbin.io/v3/b',
-    binId: null,
+    googleScriptUrl: '',
 
     getAnswerText(answer) {
         return answer === 'yes'
@@ -626,69 +625,39 @@ const AnswerCollector = {
                 time: new Date().toISOString()
             });
             localStorage.setItem(this.storageKey, JSON.stringify(answers));
-            console.log('[AnswerCollector] Saved locally', answers[answers.length - 1]);
         } catch (e) {
-            console.error('[AnswerCollector] Local save failed', e);
+            // ignore storage errors
         }
     },
 
-    async ensureBin() {
-        if (this.binId) return this.binId;
+    async sendToSheet(answer) {
+        if (!this.googleScriptUrl) return false;
 
         try {
-            const res = await fetch('https://api.jsonbin.io/v3/b', {
+            const formData = new FormData();
+            formData.append('answer', answer);
+            formData.append('text', this.getAnswerText(answer));
+            formData.append('url', window.location.href);
+            formData.append('time', new Date().toISOString());
+
+            const res = await fetch(this.googleScriptUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': '$2a$10$wWQ5wWQ5wWQ5wWQ5wWQ5wO'  // public read/write fallback
-                },
-                body: JSON.stringify([])
+                body: formData
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                this.binId = data.id;
-                return this.binId;
-            }
+            return res.ok;
         } catch (e) {
-            console.error('[AnswerCollector] Could not create bin', e);
+            console.error('[AnswerCollector] Sheet send failed', e);
+            return false;
         }
-        return null;
     },
 
     async recordAnswer(answer) {
         this.saveLocally(answer);
 
-        const payload = {
-            answer,
-            text: this.getAnswerText(answer),
-            url: window.location.href,
-            time: new Date().toISOString()
-        };
-
-        try {
-            const binId = await this.ensureBin();
-            if (!binId) {
-                console.warn('[AnswerCollector] No bin available, skipping remote save');
-                return;
-            }
-
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': '$2a$10$wWQ5wWQ5wWQ5wWQ5wWQ5wO'
-                },
-                body: JSON.stringify([payload])
-            });
-
-            if (!res.ok) {
-                console.warn('[AnswerCollector] Remote save failed', res.status);
-            } else {
-                console.log('[AnswerCollector] Saved remotely', payload);
-            }
-        } catch (e) {
-            console.error('[AnswerCollector] Remote save error', e);
+        const sent = await this.sendToSheet(answer);
+        if (sent) {
+            console.log('[AnswerCollector] Sent to Google Sheet');
         }
     }
 };
