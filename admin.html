@@ -89,12 +89,14 @@
     <script>
         const repoOwner = 'BaldwinAdrianDelosSantos';
         const repoName = 'LittleSurprise';
+        const localStorageKey = 'little_surprise_answers';
 
         function tryParseLocalAnswers() {
             try {
-                const raw = localStorage.getItem('little_surprise_answers');
+                const raw = localStorage.getItem(localStorageKey);
                 return raw ? JSON.parse(raw) : [];
             } catch (e) {
+                console.error('[admin] Failed to parse local answers', e);
                 return [];
             }
         }
@@ -102,15 +104,16 @@
         function renderAnswers(items) {
             const list = document.getElementById('answers-list');
             if (!items.length) {
-                list.innerHTML = '<div class="empty-state">No answers yet.</div>';
+                list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Try answering on the main page, then come back here.</small></div>';
                 return;
             }
 
             list.innerHTML = items.map(item => {
                 const date = item.time ? new Date(item.time).toLocaleString() : '';
+                const source = item.url ? 'Live site' : 'Local';
                 return `
                     <div class="answer-item">
-                        <div class="answer-meta">${escapeHtml(date)}</div>
+                        <div class="answer-meta">${escapeHtml(date)} · ${source}</div>
                         <div class="answer-text">${escapeHtml(item.text || item.answer)}</div>
                     </div>
                 `;
@@ -121,14 +124,19 @@
             const list = document.getElementById('answers-list');
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
+            const local = tryParseLocalAnswers();
+            console.log('[admin] Local answers loaded:', local.length);
+
             try {
                 const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/issues?labels=answer&state=all&per_page=100`);
                 let issues = [];
                 if (res.ok) {
                     issues = await res.json();
+                    console.log('[admin] GitHub issues loaded:', issues.length);
+                } else {
+                    console.warn('[admin] GitHub API returned', res.status);
                 }
 
-                const local = tryParseLocalAnswers();
                 const combined = [
                     ...issues.map(i => ({
                         text: i.title.replace('New answer: ', ''),
@@ -143,7 +151,7 @@
                 combined.sort((a, b) => new Date(b.time) - new Date(a.time));
                 renderAnswers(combined);
             } catch (e) {
-                const local = tryParseLocalAnswers();
+                console.error('[admin] Load error', e);
                 renderAnswers(local);
             }
         }

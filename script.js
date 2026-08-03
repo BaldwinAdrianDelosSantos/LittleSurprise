@@ -607,6 +607,8 @@ const AnswerCollector = {
     repoOwner: 'BaldwinAdrianDelosSantos',
     repoName: 'LittleSurprise',
     storageKey: 'little_surprise_answers',
+    backendUrl: 'https://api.jsonbin.io/v3/b',
+    binId: null,
 
     getAnswerText(answer) {
         return answer === 'yes'
@@ -624,28 +626,69 @@ const AnswerCollector = {
                 time: new Date().toISOString()
             });
             localStorage.setItem(this.storageKey, JSON.stringify(answers));
+            console.log('[AnswerCollector] Saved locally', answers[answers.length - 1]);
         } catch (e) {
-            // ignore storage errors
+            console.error('[AnswerCollector] Local save failed', e);
         }
+    },
+
+    async ensureBin() {
+        if (this.binId) return this.binId;
+
+        try {
+            const res = await fetch('https://api.jsonbin.io/v3/b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$wWQ5wWQ5wWQ5wWQ5wWQ5wO'  // public read/write fallback
+                },
+                body: JSON.stringify([])
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                this.binId = data.id;
+                return this.binId;
+            }
+        } catch (e) {
+            console.error('[AnswerCollector] Could not create bin', e);
+        }
+        return null;
     },
 
     async recordAnswer(answer) {
         this.saveLocally(answer);
 
-        const title = `New answer: ${this.getAnswerText(answer)}`;
-        const body = `Someone answered: ${this.getAnswerText(answer)}\nURL: ${window.location.href}\nTime: ${new Date().toISOString()}`;
+        const payload = {
+            answer,
+            text: this.getAnswerText(answer),
+            url: window.location.href,
+            time: new Date().toISOString()
+        };
 
         try {
-            await fetch(`https://api.github.com/repos/${this.repoOwner}/${this.repoName}/issues`, {
-                method: 'POST',
+            const binId = await this.ensureBin();
+            if (!binId) {
+                console.warn('[AnswerCollector] No bin available, skipping remote save');
+                return;
+            }
+
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                method: 'PUT',
                 headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$wWQ5wWQ5wWQ5wWQ5wWQ5wO'
                 },
-                body: JSON.stringify({ title, body, labels: ['answer'] })
+                body: JSON.stringify([payload])
             });
+
+            if (!res.ok) {
+                console.warn('[AnswerCollector] Remote save failed', res.status);
+            } else {
+                console.log('[AnswerCollector] Saved remotely', payload);
+            }
         } catch (e) {
-            // silent fail - we still saved locally
+            console.error('[AnswerCollector] Remote save error', e);
         }
     }
 };
