@@ -533,18 +533,53 @@ const MelodyEngine = {
    MUSIC TOGGLE
    ========================================= */
 function toggleMusic() {
+    const music = document.getElementById('bg-music');
     const toggleBtn = document.getElementById('music-toggle');
     const label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
 
-    if (state.musicPlaying) {
-        MelodyEngine.stop();
-        state.musicPlaying = false;
-        if (label) label.textContent = 'Music OFF';
-    } else {
-        MelodyEngine.start();
-        state.musicPlaying = true;
-        if (label) label.textContent = 'Music ON';
+    if (!music || !music.src) {
+        showToast('Music file not found. Add it to assets/music/');
+        return;
     }
+
+    if (state.musicPlaying) {
+        fadeOutMusic(music, () => {
+            music.pause();
+            state.musicPlaying = false;
+            if (label) label.textContent = 'Music OFF';
+        });
+    } else {
+        music.volume = 0;
+        music.play().then(() => {
+            fadeInMusic(music);
+            state.musicPlaying = true;
+            if (label) label.textContent = 'Music ON';
+        }).catch(() => {
+            showToast('Tap anywhere to enable music');
+        });
+    }
+}
+
+function fadeInMusic(music, targetVolume = 0.25, step = 0.02) {
+    const fade = () => {
+        if (music.volume < targetVolume) {
+            music.volume = Math.min(targetVolume, music.volume + step);
+            requestAnimationFrame(fade);
+        }
+    };
+    fade();
+}
+
+function fadeOutMusic(music, callback, step = 0.02) {
+    const fade = () => {
+        if (music.volume > 0) {
+            music.volume = Math.max(0, music.volume - step);
+            requestAnimationFrame(fade);
+        } else if (callback) {
+            callback();
+        }
+    };
+    fade();
 }
 
 /* =========================================
