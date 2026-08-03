@@ -585,7 +585,6 @@ function handleFriends(e) {
    ========================================= */
 var AnswerCollector = {
     storageKey: 'little_surprise_answers',
-    formUrl: 'https://script.google.com/macros/s/AKfycbxCQRF6JknJfXkZu4qk9XH-YUCcxhRrj4W6YoQpRhuAN57pwoT6-ONXEFiM9FmdhPYo/exec',
 
     getAnswerText: function(answer) {
         return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
@@ -628,38 +627,27 @@ var AnswerCollector = {
         var igHandle = getIgHandle();
         var device = this.getDeviceName();
 
-        var payload = {
+        var answerData = {
             answer: answer,
             text: answerText,
             name: name || 'Anonymous',
-            instagram: igHandle || 'Not provided',
+            igHandle: igHandle || 'Not provided',
             device: device,
-            link: window.location.href,
-            time: new Date().toLocaleString()
+            url: window.location.href,
+            time: new Date().toISOString()
         };
 
-        var self = this;
-        fetch(this.formUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload),
-            mode: 'cors'
-        }).then(function(res) {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.text().then(function(t) {
-                try {
-                    var data = JSON.parse(t);
-                    if (data.result !== 'ok') throw new Error(data.error || 'Unknown error');
-                } catch (parseErr) {
-                    console.warn('[AnswerCollector] Non-JSON success response:', t);
-                }
+        if (typeof db !== 'undefined') {
+            db.ref('answers').push(answerData).then(function() {
+                showToast('Answer sent! 💖');
+            }).catch(function(err) {
+                console.error('[AnswerCollector] Firebase write failed:', err);
+                showToast('Answer saved!');
             });
-        }).then(function() {
-            showToast('Answer sent! 💖');
-        }).catch(function(err) {
-            console.error('[AnswerCollector] Send failed:', err);
+        } else {
+            console.warn('[AnswerCollector] Firebase not loaded');
             showToast('Answer saved!');
-        });
+        }
     },
 
     recordAnswer: function(answer) {

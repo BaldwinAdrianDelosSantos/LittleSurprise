@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../LittleSurprise/style.css?v=2026-08-03-03">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-04">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -82,11 +82,6 @@
             font-weight: 700;
             cursor: pointer;
         }
-        .sheet-link {
-            color: #c084fc;
-            text-decoration: underline;
-            cursor: pointer;
-        }
         .error-state {
             color: #fb7185;
             text-align: center;
@@ -106,7 +101,7 @@
             <h1 class="admin-title">Answers</h1>
             <button class="refresh-btn" id="refresh-btn">Refresh</button>
             <p style="padding: 1rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">
-                Live from Google Sheet. Auto-refreshes every 3 seconds.
+                Live. Auto-refreshes every 3 seconds.
             </p>
         </div>
         <div class="admin-card" id="answers-list">
@@ -114,8 +109,22 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
-        var apiUrl = 'https://script.google.com/macros/s/AKfycbxCQRF6JknJfXkZu4qk9XH-YUCcxhRrj4W6YoQpRhuAN57pwoT6-ONXEFiM9FmdhPYo/exec';
+        var firebaseConfig = {
+            apiKey: "AIzaSyD2_KzQjqKhcYWl8bZJNyl-e0MGNX-HqkE",
+            authDomain: "littlesurprise-8fd20.firebaseapp.com",
+            databaseURL: "https://littlesurprise-8fd20-default-rtdb.firebaseio.com",
+            projectId: "littlesurprise-8fd20",
+            storageBucket: "littlesurprise-8fd20.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+        var answersRef = db.ref('answers');
 
         function escapeHtml(text) {
             var div = document.createElement('div');
@@ -157,33 +166,24 @@
         }
 
         function loadAnswers() {
-            var list = document.getElementById('answers-list');
-            list.innerHTML = '<div class="empty-state">Loading answers...</div>';
-
-            fetch(apiUrl, {
-                method: 'GET',
-                mode: 'cors'
-            }).then(function(res) {
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                return res.json();
-            }).then(function(data) {
-                if (data.result === 'ok' && data.answers) {
-                    data.answers.reverse();
-                    renderAnswers(data.answers);
-                } else if (data.result === 'error') {
-                    list.innerHTML = '<div class="error-state">Error: ' + escapeHtml(data.error || 'Unknown error') + '</div>';
-                } else {
-                    renderAnswers([]);
-                }
+            answersRef.orderByChild('time').once('value').then(function(snapshot) {
+                var items = [];
+                snapshot.forEach(function(child) {
+                    items.push(child.val());
+                });
+                renderAnswers(items.reverse());
             }).catch(function(err) {
-                console.error('[admin] Fetch failed:', err);
-                list.innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small><br><small>Make sure Apps Script is deployed as "Anyone, even anonymous".</small></div>';
+                console.error('[admin] Firebase read failed:', err);
+                document.getElementById('answers-list').innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small></div>';
             });
         }
 
+        answersRef.orderByChild('time').limitToLast(100).on('child_added', function(snapshot) {
+            loadAnswers();
+        });
+
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
         loadAnswers();
-        setInterval(loadAnswers, 3000);
     </script>
 </body>
 </html>

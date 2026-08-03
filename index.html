@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2026-08-03-03">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-04">
 </head>
 <body>
 
@@ -322,6 +322,21 @@
         <source src="assets/music/sunday-morning.mp3" type="audio/mpeg">
     </audio>
 
-    <script src="script.js?v=2026-08-03-03"></script>
+    <script src="script.js?v=2026-08-03-04"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyD2_KzQjqKhcYWl8bZJNyl-e0MGNX-HqkE",
+            authDomain: "littlesurprise-8fd20.firebaseapp.com",
+            databaseURL: "https://littlesurprise-8fd20-default-rtdb.firebaseio.com",
+            projectId: "littlesurprise-8fd20",
+            storageBucket: "littlesurprise-8fd20.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+    </script>
 </body>
 </html>
