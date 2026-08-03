@@ -1254,6 +1254,9 @@ body {
     max-width: 320px;
     line-height: 1.5;
 }
+
+/* =========================================
+   RESPONSIVE - MOBILE FIRST
    ========================================= */
 @media (max-width: 767px) {
     .screen {
