@@ -237,6 +237,7 @@ function initLoadingSequence() {
             setTimeout(() => {
                 transitionToScreen('home-page');
                 showShareButton();
+                autoPlayMusic();
             }, 500);
             return;
         }
@@ -255,6 +256,23 @@ function initLoadingSequence() {
     }
 
     setTimeout(updateLoading, 500);
+}
+
+function autoPlayMusic() {
+    const music = document.getElementById('bg-music');
+    const toggleBtn = document.getElementById('music-toggle');
+    const label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
+
+    if (!music) return;
+
+    music.volume = 0;
+    music.play().then(function() {
+        fadeInMusic(music);
+        state.musicPlaying = true;
+        if (label) label.textContent = 'Music ON';
+    }).catch(function() {
+        if (label) label.textContent = 'Music OFF';
+    });
 }
 
 /* =========================================
