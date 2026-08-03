@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2026-08-03-05">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-06">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -101,7 +101,7 @@
             <h1 class="admin-title">Answers</h1>
             <button class="refresh-btn" id="refresh-btn">Refresh</button>
             <p style="padding: 1rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.6);">
-                Live. Auto-refreshes every 3 seconds.
+                Answers from this device.
             </p>
         </div>
         <div class="admin-card" id="answers-list">
@@ -110,12 +110,22 @@
     </div>
 
     <script>
-        var apiUrl = 'api.php';
+        var localStorageKey = 'little_surprise_answers';
 
         function escapeHtml(text) {
             var div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function tryParseLocalAnswers() {
+            try {
+                var raw = localStorage.getItem(localStorageKey);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                console.error('[admin] Failed to parse local answers', e);
+                return [];
+            }
         }
 
         function renderAnswers(items) {
@@ -124,6 +134,10 @@
                 list.innerHTML = '<div class="empty-state">No answers yet.<br><small>Answers will appear here automatically.</small></div>';
                 return;
             }
+
+            items.sort(function(a, b) {
+                return new Date(b.time || 0) - new Date(a.time || 0);
+            });
 
             var html = '';
             for (var i = 0; i < items.length; i++) {
@@ -155,24 +169,8 @@
             var list = document.getElementById('answers-list');
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
-            fetch(apiUrl, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            }).then(function(res) {
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                return res.json();
-            }).then(function(data) {
-                if (data.result === 'ok' && data.answers) {
-                    renderAnswers(data.answers);
-                } else if (data.result === 'error') {
-                    list.innerHTML = '<div class="error-state">Error: ' + escapeHtml(data.error || 'Unknown error') + '</div>';
-                } else {
-                    renderAnswers([]);
-                }
-            }).catch(function(err) {
-                console.error('[admin] Fetch failed:', err);
-                list.innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small><br><small>Make sure XAMPP is running and api.php is accessible.</small></div>';
-            });
+            var local = tryParseLocalAnswers();
+            renderAnswers(local);
         }
 
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
