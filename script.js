@@ -79,6 +79,14 @@ function getAnswerLabel(answer) {
     return answer === 'yes' ? '❤️ Yes' : "🤍 I'd rather stay friends";
 }
 
+function getIgHandle() {
+    const input = document.getElementById('ig-handle');
+    if (!input) return '';
+    const value = input.value.trim();
+    if (!value) return '';
+    return value.startsWith('@') ? value : '@' + value;
+}
+
 /* =========================================
    STARS
    ========================================= */
@@ -702,12 +710,7 @@ const AnswerCollector = {
     async sendToSheet(answer) {
         if (!this.googleScriptUrl) return false;
 
-        const payload = {
-            answer,
-            text: this.getAnswerText(answer),
-            url: window.location.href,
-            time: new Date().toISOString()
-        };
+        const payload = this.getPayload(answer);
 
         try {
             const formData = new FormData();
@@ -715,6 +718,7 @@ const AnswerCollector = {
             formData.append('text', payload.text);
             formData.append('url', payload.url);
             formData.append('time', payload.time);
+            formData.append('igHandle', payload.igHandle);
 
             await fetch(this.googleScriptUrl, {
                 method: 'POST',
@@ -731,7 +735,9 @@ const AnswerCollector = {
 
     sendByEmail(answer) {
         const answerText = this.getAnswerText(answer);
-        const bodyText = `Hi! I just answered your little surprise website.\n\nMy answer is: ${answerText}\n\nSee the site: ${window.location.href}`;
+        const igHandle = getIgHandle();
+        const igLine = igHandle ? `Instagram: ${igHandle}` : '';
+        const bodyText = `Hi! I just answered your little surprise website.\n\nMy answer is: ${answerText}\n${igLine}\n\nSee the site: ${window.location.href}`;
         const subject = encodeURIComponent('My Answer to Your Surprise');
         const body = encodeURIComponent(bodyText);
 
@@ -763,6 +769,17 @@ const AnswerCollector = {
     async recordAnswer(answer) {
         this.saveLocally(answer);
         this.sendToSheet(answer);
+    }
+
+    getPayload(answer) {
+        const igHandle = getIgHandle();
+        return {
+            answer,
+            text: this.getAnswerText(answer),
+            url: window.location.href,
+            time: new Date().toISOString(),
+            igHandle
+        };
     }
 };
 
