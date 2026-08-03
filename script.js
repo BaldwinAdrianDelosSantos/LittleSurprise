@@ -637,17 +637,23 @@ var AnswerCollector = {
             time: new Date().toISOString()
         };
 
-        if (typeof db !== 'undefined') {
-            db.ref('answers').push(answerData).then(function() {
+        fetch('api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(answerData)
+        }).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }).then(function(data) {
+            if (data.result === 'ok') {
                 showToast('Answer sent! 💖');
-            }).catch(function(err) {
-                console.error('[AnswerCollector] Firebase write failed:', err);
-                showToast('Answer saved!');
-            });
-        } else {
-            console.warn('[AnswerCollector] Firebase not loaded');
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        }).catch(function(err) {
+            console.error('[AnswerCollector] Send failed:', err);
             showToast('Answer saved!');
-        }
+        });
     },
 
     recordAnswer: function(answer) {

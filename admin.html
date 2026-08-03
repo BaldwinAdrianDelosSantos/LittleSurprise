@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Nunito:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2026-08-03-04">
+    <link rel="stylesheet" href="style.css?v=2026-08-03-05">
     <style>
         .admin-wrap {
             min-height: 100vh;
@@ -109,22 +109,8 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyD2_KzQjqKhcYWl8bZJNyl-e0MGNX-HqkE",
-            authDomain: "littlesurprise-8fd20.firebaseapp.com",
-            databaseURL: "https://littlesurprise-8fd20-default-rtdb.firebaseio.com",
-            projectId: "littlesurprise-8fd20",
-            storageBucket: "littlesurprise-8fd20.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef123456"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
-        var answersRef = db.ref('answers');
+        var apiUrl = 'api.php';
 
         function escapeHtml(text) {
             var div = document.createElement('div');
@@ -166,24 +152,32 @@
         }
 
         function loadAnswers() {
-            answersRef.orderByChild('time').once('value').then(function(snapshot) {
-                var items = [];
-                snapshot.forEach(function(child) {
-                    items.push(child.val());
-                });
-                renderAnswers(items.reverse());
+            var list = document.getElementById('answers-list');
+            list.innerHTML = '<div class="empty-state">Loading answers...</div>';
+
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }).then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            }).then(function(data) {
+                if (data.result === 'ok' && data.answers) {
+                    renderAnswers(data.answers);
+                } else if (data.result === 'error') {
+                    list.innerHTML = '<div class="error-state">Error: ' + escapeHtml(data.error || 'Unknown error') + '</div>';
+                } else {
+                    renderAnswers([]);
+                }
             }).catch(function(err) {
-                console.error('[admin] Firebase read failed:', err);
-                document.getElementById('answers-list').innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small></div>';
+                console.error('[admin] Fetch failed:', err);
+                list.innerHTML = '<div class="error-state">Could not load answers.<br><small>' + escapeHtml(err.message) + '</small><br><small>Make sure XAMPP is running and api.php is accessible.</small></div>';
             });
         }
 
-        answersRef.orderByChild('time').limitToLast(100).on('child_added', function(snapshot) {
-            loadAnswers();
-        });
-
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
         loadAnswers();
+        setInterval(loadAnswers, 3000);
     </script>
 </body>
 </html>
