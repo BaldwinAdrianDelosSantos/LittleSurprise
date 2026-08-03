@@ -151,20 +151,26 @@
         }
 
         async function loadAnswers() {
-            const list = document.getElementById('answers-list');
+            var list = document.getElementById('answers-list');
             list.innerHTML = '<div class="empty-state">Loading answers...</div>';
 
-            const local = tryParseLocalAnswers();
-            const all = [...local.map(i => ({...i, source: 'Local'}))];
-            const scriptUrl = localStorage.getItem(scriptUrlKey) || '';
+            var local = tryParseLocalAnswers();
+            var all = [];
+            var scriptUrl = localStorage.getItem(scriptUrlKey) || '';
+
+            for (var i = 0; i < local.length; i++) {
+                all.push(local[i]);
+            }
 
             if (scriptUrl) {
                 try {
-                    const res = await fetch(scriptUrl, { method: 'GET' });
+                    var res = await fetch(scriptUrl, { method: 'GET' });
                     if (res.ok) {
-                        const remote = await res.json();
+                        var remote = await res.json();
                         if (Array.isArray(remote)) {
-                            all.push(...remote.map(i => ({...i, source: 'Remote'})));
+                            for (var j = 0; j < remote.length; j++) {
+                                all.push(remote[j]);
+                            }
                         }
                     }
                 } catch (e) {
@@ -172,10 +178,16 @@
                 }
             }
 
-            const localWithSource = local.map(i => ({...i, source: 'Local'}));
-            const combined = [...localWithSource, ...all];
+            for (var k = 0; k < all.length; k++) {
+                all[k].source = all[k].source || 'Local';
+            }
 
-            all.sort((a, b) => new Date(b.time || b.created_at) - new Date(a.time || a.created_at));
+            all.sort(function(a, b) {
+                var timeA = new Date(a.time || a.created_at || 0);
+                var timeB = new Date(b.time || b.created_at || 0);
+                return timeB - timeA;
+            });
+
             renderAnswers(all);
         }
 
