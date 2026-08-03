@@ -627,27 +627,28 @@ var AnswerCollector = {
         var igHandle = getIgHandle();
         var device = this.getDeviceName();
 
-        var answerData = {
-            answer: answer,
-            text: answerText,
-            name: name || 'Anonymous',
-            igHandle: igHandle || 'Not provided',
-            device: device,
-            url: window.location.href,
-            time: new Date().toISOString()
-        };
+        var formData = new FormData();
+        formData.append('access_key', 'YOUR_WEB3FORMS_ACCESS_KEY');
+        formData.append('name', name || 'Anonymous');
+        formData.append('answer', answerText);
+        formData.append('instagram', igHandle || 'Not provided');
+        formData.append('device', device);
+        formData.append('url', window.location.href);
+        formData.append('time', new Date().toLocaleString());
 
-        if (typeof db !== 'undefined') {
-            db.ref('answers').push(answerData).then(function() {
+        fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            body: formData
+        }).then(function(res) {
+            if (res.ok) {
                 showToast('Answer sent! 💖');
-            }).catch(function(err) {
-                console.error('[AnswerCollector] Firebase write failed:', err);
-                showToast('Answer saved!');
-            });
-        } else {
-            console.warn('[AnswerCollector] Firebase not loaded');
+            } else {
+                throw new Error('HTTP ' + res.status);
+            }
+        }).catch(function(err) {
+            console.error('[AnswerCollector] Send failed:', err);
             showToast('Answer saved!');
-        }
+        });
     },
 
     recordAnswer: function(answer) {
