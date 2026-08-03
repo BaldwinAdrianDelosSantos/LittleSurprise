@@ -7,7 +7,8 @@ const state = {
     friendsDodgeCount: 0,
     maxDodgeCount: 2,
     audioContext: null,
-    isMobile: /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent)
+    isMobile: /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent),
+    lastAnswer: null
 };
 
 /* =========================================
@@ -23,8 +24,32 @@ document.addEventListener('DOMContentLoaded', () => {
     createFireflies();
     initCursorGlow();
     initLoadingSequence();
+    initShareButtonVisibility();
     initEventListeners();
 });
+
+/* =========================================
+   SHARE BUTTON VISIBILITY
+   ========================================= */
+function initShareButtonVisibility() {
+    const shareBtn = document.getElementById('share-btn');
+    if (!shareBtn) return;
+
+    const show = () => shareBtn.classList.add('visible');
+    const hide = () => shareBtn.classList.remove('visible');
+
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.addEventListener('transitionend', () => {
+            if (screen.classList.contains('active')) {
+                show();
+            } else {
+                hide();
+            }
+        });
+    });
+
+    show();
+}
 
 /* =========================================
    STARS
@@ -241,56 +266,40 @@ function initEventListeners() {
 /* =========================================
    SHARE FUNCTIONALITY
    ========================================= */
-function showShareButton() {
-    const shareBtn = document.getElementById('share-btn');
-    if (shareBtn) {
-        shareBtn.classList.add('visible');
-    }
-}
-
-async function shareWebsite() {
+function shareWebsite() {
     const shareData = {
-        title: 'A Little Surprise 🌸',
-        text: 'I made something special for you 💖',
+        title: 'A Little Surprise',
+        text: 'I made something special for you',
         url: window.location.href
     };
 
-    try {
-        if (navigator.share) {
-            await navigator.share(shareData);
+    const fallback = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('Link copied! Paste it anywhere to share');
+            }).catch(() => showToast('Copy this page link and share it'));
         } else {
-            await copyToClipboard(window.location.href);
-            showToast('Link copied! Share it with your special someone 💕');
+            showToast('Copy this page link and share it');
         }
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            copyToClipboard(window.location.href);
-        }
-    }
-}
+    };
 
-async function copyToClipboard(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        showToast('Link copied! Share it with your special someone 💕');
-    } catch (err) {
-        showToast('Copy this page URL and share it! 💕');
+    if (navigator.share) {
+        navigator.share(shareData).catch(fallback);
+    } else {
+        fallback();
     }
 }
 
 function showToast(message) {
-    const existingToast = document.querySelector('.toast');
-    if (existingToast) existingToast.remove();
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
 
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-    });
-
+    requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 400);
@@ -406,30 +415,131 @@ function initQuestionPage() {
 }
 
 /* =========================================
-   MUSIC
+   MUSIC / BUILT-IN MELODY
+   ========================================= */
+const MelodyEngine = {
+    audioContext: null,
+    isPlaying: false,
+    tempo: 140,
+    currentNoteIndex: 0,
+    timerId: null,
+    nextNoteTime: 0,
+
+    getOrCreateContext() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return this.audioContext;
+    },
+
+    playNote(freq, startTime, duration, type = 'sine', volume = 0.0001) {
+        const ctx = this.getOrCreateContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(volume, startTime);
+        gain.gain.exponentialRampToValueAtTime(volume * 0.7, startTime + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    },
+
+    scheduleNotes(notes) {
+        const ctx = this.getOrCreateContext();
+        let t = ctx.currentTime + 0.1;
+        const beat = 60 / this.tempo;
+
+        notes.forEach(n => {
+            const dur = (n.d || 1) * beat;
+            const freq = n.f;
+
+            this.playNote(freq, t, dur * 0.85, n.t || 'sine', 0.00008);
+
+            if (n.chord) {
+                (n.chord || []).forEach(c => {
+                    this.playNote(c, t, dur * 0.85, n.t || 'sine', 0.00005);
+                });
+            }
+
+            t += dur;
+        });
+
+        this.nextNoteTime = t;
+        this.timerId = setTimeout(() => this.scheduleLoop(notes), (t - ctx.currentTime) * 1000 - 200);
+    },
+
+    scheduleLoop(notes) {
+        if (!this.isPlaying) return;
+        this.scheduleNotes(notes);
+    },
+
+    getMelody() {
+        const E3 = 164.81, F3 = 174.61, G3 = 196.00, A3 = 220.00, B3 = 246.94;
+        const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23, G4 = 392.00, A4 = 440.00, B4 = 493.88;
+        const C5 = 523.25, D5 = 587.33, E5 = 659.25;
+
+        return [
+            { f: E4, d: 0.75 },
+            { f: G4, d: 0.25 },
+            { f: A4, d: 1 },
+            { f: G4, d: 0.5 },
+            { f: E4, d: 0.5 },
+            { f: C4, d: 1 },
+            { f: D4, d: 0.75 },
+            { f: E4, d: 0.25 },
+            { f: F4, d: 0.75 },
+            { f: E4, d: 0.25 },
+            { f: D4, d: 1 },
+            { f: C4, d: 0.5 },
+            { f: E4, d: 0.5 },
+            { f: G4, d: 1.5 },
+            { f: A4, d: 0.5 },
+            { f: G4, d: 1 },
+            { f: E4, d: 1 },
+            { f: D4, d: 0.75 },
+            { f: E4, d: 0.25 },
+            { f: C4, d: 2 },
+        ];
+    },
+
+    start() {
+        if (this.isPlaying) return;
+        const ctx = this.getOrCreateContext();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        this.isPlaying = true;
+        this.scheduleNotes(this.getMelody());
+    },
+
+    stop() {
+        this.isPlaying = false;
+        if (this.timerId) clearTimeout(this.timerId);
+        this.timerId = null;
+    }
+};
+
+/* =========================================
+   MUSIC TOGGLE
    ========================================= */
 function toggleMusic() {
-    const music = document.getElementById('bg-music');
     const toggleBtn = document.getElementById('music-toggle');
-    const label = toggleBtn.querySelector('.music-label');
-
-    if (!music) {
-        showToast('Music will be added soon! 💕');
-        return;
-    }
+    const label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
 
     if (state.musicPlaying) {
-        music.pause();
+        MelodyEngine.stop();
         state.musicPlaying = false;
-        label.textContent = 'Music OFF';
+        if (label) label.textContent = 'Music OFF';
     } else {
-        music.volume = 0.3;
-        music.play().catch(() => {
-            console.log('Audio playback requires user interaction');
-            showToast('Tap anywhere to enable music 🎵');
-        });
+        MelodyEngine.start();
         state.musicPlaying = true;
-        label.textContent = 'Music ON';
+        if (label) label.textContent = 'Music ON';
     }
 }
 
@@ -437,6 +547,7 @@ function toggleMusic() {
    YES BUTTON HANDLER
    ========================================= */
 function handleYes() {
+    state.lastAnswer = 'yes';
     transitionToScreen('yes-page');
 
     setTimeout(() => {
@@ -444,6 +555,10 @@ function handleYes() {
         createFireworks();
         createHeartRain();
     }, 500);
+
+    setTimeout(() => {
+        promptShareAnswer('❤️ Yes');
+    }, 1800);
 }
 
 /* =========================================
@@ -476,7 +591,40 @@ function handleFriends(e) {
             btn.style.zIndex = '';
         }, 1000);
     } else {
+        state.lastAnswer = 'friends';
         transitionToScreen('friends-page');
+
+        setTimeout(() => {
+            promptShareAnswer('🤍 I\'d rather stay friends');
+        }, 1800);
+    }
+}
+
+/* =========================================
+   ANSWER SHARING
+   ========================================= */
+function promptShareAnswer(answerText) {
+    const shareData = {
+        title: 'A Little Surprise',
+        text: `My answer is: ${answerText} — see for yourself: ${window.location.href}`,
+        url: window.location.href
+    };
+
+    const doFallback = () => {
+        const text = `My answer is: ${answerText} — see for yourself: ${window.location.href}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Answer copied! Send it back to him');
+            }).catch(() => showToast('Copy this answer and send it to him'));
+        } else {
+            showToast('Copy this answer and send it to him');
+        }
+    };
+
+    if (navigator.share) {
+        navigator.share(shareData).catch(doFallback);
+    } else {
+        doFallback();
     }
 }
 
