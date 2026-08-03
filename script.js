@@ -671,19 +671,27 @@ const AnswerCollector = {
     async sendToSheet(answer) {
         if (!this.googleScriptUrl) return false;
 
+        const payload = {
+            answer,
+            text: this.getAnswerText(answer),
+            url: window.location.href,
+            time: new Date().toISOString()
+        };
+
         try {
             const formData = new FormData();
-            formData.append('answer', answer);
-            formData.append('text', this.getAnswerText(answer));
-            formData.append('url', window.location.href);
-            formData.append('time', new Date().toISOString());
+            formData.append('answer', payload.answer);
+            formData.append('text', payload.text);
+            formData.append('url', payload.url);
+            formData.append('time', payload.time);
 
             const res = await fetch(this.googleScriptUrl, {
                 method: 'POST',
+                mode: 'no-cors',
                 body: formData
             });
 
-            return res.ok;
+            return true;
         } catch (e) {
             console.error('[AnswerCollector] Sheet send failed', e);
             return false;
