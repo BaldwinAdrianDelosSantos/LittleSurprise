@@ -645,7 +645,7 @@ const AnswerCollector = {
     repoOwner: 'BaldwinAdrianDelosSantos',
     repoName: 'LittleSurprise',
     storageKey: 'little_surprise_answers',
-    googleScriptUrl: '',
+    googleScriptUrl: 'https://script.google.com/macros/s/AKfycbzZRjseDAXpjL3eZ36zzPHHKY4B_6uGUDDgKFMA_ZVs_HVBJUHi1L4QFAgcw-1_RLz3/exec',
 
     getAnswerText(answer) {
         return answer === 'yes'
