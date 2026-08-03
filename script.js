@@ -764,12 +764,12 @@ const AnswerCollector = {
         } else {
             showToast('Please send the email that opened');
         }
-    }
+    },
 
     async recordAnswer(answer) {
         this.saveLocally(answer);
         this.sendToSheet(answer);
-    }
+    },
 
     getPayload(answer) {
         const igHandle = getIgHandle();
