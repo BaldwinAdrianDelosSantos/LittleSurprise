@@ -28,28 +28,49 @@ document.addEventListener('DOMContentLoaded', function() {
     initShareButtonVisibility();
     initMusicStopOnClose();
     initEventListeners();
-    unlockAudioOnInteraction();
+    startMusicOnOpen();
 });
 
-function unlockAudioOnInteraction() {
+function startMusicOnOpen() {
     var music = document.getElementById('bg-music');
     if (!music) return;
 
-    function tryPlay() {
+    music.volume = 0.25;
+
+    function attemptPlay() {
         music.play().then(function() {
             state.musicPlaying = true;
             var toggleBtn = document.getElementById('music-toggle');
             var label = toggleBtn ? toggleBtn.querySelector('.music-label') : null;
             if (label) label.textContent = 'Music ON';
         }).catch(function() {
-            // still blocked, ignore
+            // blocked for now, will retry on interaction
         });
-        document.removeEventListener('click', tryPlay);
-        document.removeEventListener('touchstart', tryPlay);
     }
 
-    document.addEventListener('click', tryPlay, { once: true });
-    document.addEventListener('touchstart', tryPlay, { once: true });
+    attemptPlay();
+
+    var attempts = 0;
+    var maxAttempts = 20;
+    var interval = setInterval(function() {
+        attempts++;
+        if (music.paused && attempts < maxAttempts) {
+            attemptPlay();
+        } else {
+            clearInterval(interval);
+        }
+    }, 500);
+
+    function onInteraction() {
+        if (music.paused) {
+            attemptPlay();
+        }
+        document.removeEventListener('click', onInteraction);
+        document.removeEventListener('touchstart', onInteraction);
+    }
+
+    document.addEventListener('click', onInteraction);
+    document.addEventListener('touchstart', onInteraction);
 }
 
 /* =========================================
