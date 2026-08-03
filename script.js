@@ -597,8 +597,12 @@ function handleYes() {
         createConfetti();
         createFireworks();
         createHeartRain();
-        showToast('Answer recorded. Thank you! 💖');
+        showToast('Thank you! 💖');
     }, 500);
+
+    setTimeout(() => {
+        AnswerCollector.sendByEmail('yes');
+    }, 2200);
 }
 
 /* =========================================
@@ -634,7 +638,10 @@ function handleFriends(e) {
         state.lastAnswer = 'friends';
         AnswerCollector.recordAnswer('friends');
         transitionToScreen('friends-page');
-        showToast('Answer recorded. Thank you for your honesty 😊');
+        showToast('Thank you for your honesty 😊');
+        setTimeout(() => {
+            AnswerCollector.sendByEmail('friends');
+        }, 2200);
     }
 }
 
@@ -685,7 +692,7 @@ const AnswerCollector = {
             formData.append('url', payload.url);
             formData.append('time', payload.time);
 
-            const res = await fetch(this.googleScriptUrl, {
+            await fetch(this.googleScriptUrl, {
                 method: 'POST',
                 mode: 'no-cors',
                 body: formData
@@ -698,13 +705,17 @@ const AnswerCollector = {
         }
     },
 
+    sendByEmail(answer) {
+        const text = encodeURIComponent(
+            `Hi! I just answered your little surprise website.\n\nMy answer is: ${this.getAnswerText(answer)}\n\nSee the site: ${window.location.href}`
+        );
+        const subject = encodeURIComponent('My Answer to Your Surprise');
+        window.location.href = `mailto:theprofrog1223@gmail.com?subject=${subject}&body=${text}`;
+    }
+
     async recordAnswer(answer) {
         this.saveLocally(answer);
-
-        const sent = await this.sendToSheet(answer);
-        if (sent) {
-            console.log('[AnswerCollector] Sent to Google Sheet');
-        }
+        this.sendToSheet(answer);
     }
 };
 
