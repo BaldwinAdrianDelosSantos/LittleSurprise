@@ -25,8 +25,32 @@ document.addEventListener('DOMContentLoaded', () => {
     initCursorGlow();
     initLoadingSequence();
     initShareButtonVisibility();
+    initMusicStopOnClose();
     initEventListeners();
 });
+
+/* =========================================
+   STOP MUSIC WHEN TAB/APP CLOSES
+   ========================================= */
+function initMusicStopOnClose() {
+    const music = document.getElementById('bg-music');
+
+    window.addEventListener('beforeunload', () => {
+        if (music && state.musicPlaying) {
+            music.pause();
+            music.currentTime = 0;
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && music && state.musicPlaying) {
+            music.pause();
+            state.musicPlaying = false;
+            const label = document.querySelector('#music-toggle .music-label');
+            if (label) label.textContent = 'Music OFF';
+        }
+    });
+}
 
 /* =========================================
    SHARE BUTTON VISIBILITY
@@ -706,11 +730,34 @@ const AnswerCollector = {
     },
 
     sendByEmail(answer) {
-        const text = encodeURIComponent(
-            `Hi! I just answered your little surprise website.\n\nMy answer is: ${this.getAnswerText(answer)}\n\nSee the site: ${window.location.href}`
-        );
+        const answerText = this.getAnswerText(answer);
+        const bodyText = `Hi! I just answered your little surprise website.\n\nMy answer is: ${answerText}\n\nSee the site: ${window.location.href}`;
         const subject = encodeURIComponent('My Answer to Your Surprise');
-        window.location.href = `mailto:theprofrog1223@gmail.com?subject=${subject}&body=${text}`;
+        const body = encodeURIComponent(bodyText);
+
+        const mailto = `mailto:theprofrog1223@gmail.com?subject=${subject}&body=${body}`;
+
+        if (navigator.share) {
+            navigator.share({
+                title: 'My Answer to Your Surprise',
+                text: bodyText,
+                url: window.location.href
+            }).catch(() => {
+                window.open(mailto, '_blank');
+            });
+        } else {
+            window.open(mailto, '_blank');
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(bodyText).then(() => {
+                showToast('Answer copied! Please send it to him');
+            }).catch(() => {
+                showToast('Please send the email that opened');
+            });
+        } else {
+            showToast('Please send the email that opened');
+        }
     }
 
     async recordAnswer(answer) {
