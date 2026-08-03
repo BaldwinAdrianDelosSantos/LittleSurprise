@@ -67,6 +67,31 @@
             font-weight: 700;
             cursor: pointer;
         }
+        .settings-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .settings-input {
+            flex: 1;
+            min-width: 220px;
+            padding: 0.8rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .settings-input::placeholder {
+            color: rgba(255, 255, 255, 0.45);
+        }
+        .status-text {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
     </style>
 </head>
 <body>
@@ -79,7 +104,12 @@
     <div class="admin-wrap">
         <div class="admin-card">
             <h1 class="admin-title">Answers</h1>
-            <button class="refresh-btn" id="refresh-btn">Refresh</button>
+            <div class="settings-row">
+                <input id="script-url" class="settings-input" placeholder="Paste Google Apps Script URL here" />
+                <button class="refresh-btn" id="save-settings">Save</button>
+                <button class="refresh-btn" id="refresh-btn">Refresh</button>
+            </div>
+            <p class="status-text" id="status-text"></p>
         </div>
         <div class="admin-card" id="answers-list">
             <div class="empty-state">Loading answers...</div>
@@ -88,6 +118,7 @@
 
     <script>
         const localStorageKey = 'little_surprise_answers';
+        const scriptUrlKey = 'little_surprise_script_url';
 
         function tryParseLocalAnswers() {
             try {
@@ -124,19 +155,20 @@
 
             const local = tryParseLocalAnswers();
             const all = [...local.map(i => ({...i, source: 'Local'}))];
+            const scriptUrl = localStorage.getItem(scriptUrlKey) || '';
 
-            try {
-                const res = await fetch('https://api.github.com/repos/BaldwinAdrianDelosSantos/LittleSurprise/issues?labels=answer&state=all&per_page=100');
-                if (res.ok) {
-                    const issues = await res.json();
-                    all.push(...issues.map(i => ({
-                        text: i.title.replace('New answer: ', ''),
-                        time: i.created_at,
-                        source: 'GitHub Issue'
-                    })));
+            if (scriptUrl) {
+                try {
+                    const res = await fetch(scriptUrl, { method: 'GET' });
+                    if (res.ok) {
+                        const remote = await res.json();
+                        if (Array.isArray(remote)) {
+                            all.push(...remote.map(i => ({...i, source: 'Remote'})));
+                        }
+                    }
+                } catch (e) {
+                    console.error('[admin] Remote load failed', e);
                 }
-            } catch (e) {
-                console.error('[admin] GitHub load failed', e);
             }
 
             all.sort((a, b) => new Date(b.time || b.created_at) - new Date(a.time || a.created_at));
@@ -150,6 +182,26 @@
         }
 
         document.getElementById('refresh-btn').addEventListener('click', loadAnswers);
+
+        const urlInput = document.getElementById('script-url');
+        const saveBtn = document.getElementById('save-settings');
+        const statusText = document.getElementById('status-text');
+
+        if (urlInput) {
+            urlInput.value = localStorage.getItem(scriptUrlKey) || '';
+        }
+
+        saveBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                statusText.textContent = 'Please paste a URL first.';
+                return;
+            }
+            localStorage.setItem(scriptUrlKey, url);
+            statusText.textContent = 'Saved. You can now view remote answers.';
+            loadAnswers();
+        });
+
         loadAnswers();
     </script>
 </body>
