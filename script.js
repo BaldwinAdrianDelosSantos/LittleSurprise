@@ -34,21 +34,12 @@ document.addEventListener('DOMContentLoaded', function() {
    STOP MUSIC WHEN TAB/APP CLOSES
    ========================================= */
 function initMusicStopOnClose() {
-    const music = document.getElementById('bg-music');
+    var music = document.getElementById('bg-music');
 
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', function() {
         if (music && state.musicPlaying) {
             music.pause();
             music.currentTime = 0;
-        }
-    });
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden && music && state.musicPlaying) {
-            music.pause();
-            state.musicPlaying = false;
-            const label = document.querySelector('#music-toggle .music-label');
-            if (label) label.textContent = 'Music OFF';
         }
     });
 }
